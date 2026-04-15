@@ -1,8 +1,111 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from '.prisma/client';
+import { PrismaService } from './prisma/prisma.service';
+
+type CreateUserInput = {
+  email?: string;
+  name?: string | null;
+};
+
+type UpdateUserInput = {
+  email?: string;
+  name?: string | null;
+};
 
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return 'Hello World!';
+  constructor(private readonly prisma: PrismaService) {}
+
+  async getStatus() {
+    await this.prisma.$queryRaw`SELECT 1`;
+
+    return {
+      service: 'ecom-nest-api',
+      database: 'connected',
+    };
+  }
+
+  async getUsers() {
+    return this.prisma.user.findMany({
+      orderBy: { id: 'asc' },
+    });
+  }
+
+  async createUser(input: CreateUserInput) {
+    const email = input.email?.trim();
+
+    if (!email) {
+      throw new BadRequestException('email is required');
+    }
+
+    try {
+      return await this.prisma.user.create({
+        data: {
+          email,
+          name: this.normalizeName(input.name),
+        },
+      });
+    } catch (error) {
+      this.handlePrismaError(error);
+      throw error;
+    }
+  }
+
+  async updateUser(id: number, input: UpdateUserInput) {
+    const data: { email?: string; name?: string | null } = {};
+
+    if (input.email !== undefined) {
+      const email = input.email.trim();
+
+      if (!email) {
+        throw new BadRequestException('email cannot be empty');
+      }
+
+      data.email = email;
+    }
+
+    if (input.name !== undefined) {
+      data.name = this.normalizeName(input.name);
+    }
+
+    if (Object.keys(data).length === 0) {
+      throw new BadRequestException('provide at least one field to update');
+    }
+
+    try {
+      return await this.prisma.user.update({
+        where: { id },
+        data,
+      });
+    } catch (error) {
+      this.handlePrismaError(error);
+      throw error;
+    }
+  }
+
+  private normalizeName(name: string | null | undefined) {
+    if (name === undefined) {
+      return undefined;
+    }
+
+    const trimmedName = name?.trim();
+    return trimmedName ? trimmedName : null;
+  }
+
+  private handlePrismaError(error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        throw new ConflictException('a user with this email already exists');
+      }
+
+      if (error.code === 'P2025') {
+        throw new NotFoundException('user not found');
+      }
+    }
   }
 }
