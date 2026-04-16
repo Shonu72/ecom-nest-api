@@ -1,4 +1,4 @@
-import { ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -20,7 +20,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
-  ) {}
+  ) { }
 
   /**
    * Registers a new user using the UsersService.
@@ -109,21 +109,31 @@ export class AuthService {
    * Refreshes the access token using a valid refresh token.
    */
   async refreshTokens(userId: string, refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+    if (!refreshToken) {
+      throw new BadRequestException('Refresh token is required');
+    }
+
     const user = await this.usersService.findOne(userId);
 
     if (!user || !user.refreshToken) {
-      throw new ForbiddenException('Access Denied');
+      throw new ForbiddenException('Access Denied: No session found');
     }
 
-    const refreshTokenMatches = await bcrypt.compare(refreshToken, user.refreshToken);
-    if (!refreshTokenMatches) {
-      throw new ForbiddenException('Access Denied');
+    try {
+      const refreshTokenMatches = await bcrypt.compare(refreshToken, user.refreshToken);
+      if (!refreshTokenMatches) {
+        throw new ForbiddenException('Access Denied: Invalid session');
+      }
+
+      const tokens = await this.getTokens(user.id, user.email);
+      await this.updateRefreshToken(user.id, tokens.refreshToken);
+
+      return tokens;
+    } catch (error) {
+      // Catch bcrypt specific errors or other runtime issues
+      if (error instanceof ForbiddenException) throw error;
+      throw new UnauthorizedException('Authentication failed during token refresh');
     }
-
-    const tokens = await this.getTokens(user.id, user.email);
-    await this.updateRefreshToken(user.id, tokens.refreshToken);
-
-    return tokens;
   }
 
   private async updateRefreshToken(userId: string, refreshToken: string) {

@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { AuthResponseDto } from './dto/auth-reponse.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RefreshDto } from './dto/refresh.dto';
 
 /**
  * AuthController defines the API endpoints for authentication.
@@ -58,12 +59,12 @@ export class AuthController {
    * Refresh tokens using the refresh token.
    * POST /auth/refresh
    */
+  @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refreshTokens(
-    @GetCurrentUser('sub') userId: string,
-    @Body('refreshToken') refreshToken: string,
-  ) {
-    return await this.authService.refreshTokens(userId, refreshToken);
+  @ApiOperation({ summary: 'Refresh access token' })
+  @ApiResponse({ status: 200, description: 'Tokens successfully refreshed' })
+  async refreshTokens(@Body() refreshDto: RefreshDto) {
+    return await this.authService.refreshTokens(refreshDto.userId, refreshDto.refreshToken);
   }
 }
