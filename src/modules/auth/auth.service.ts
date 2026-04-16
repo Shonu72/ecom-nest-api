@@ -3,13 +3,13 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UsersService } from '../users/users.service';
 import { AuthResponseDto } from './dto/auth-reponse.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
 /**
  * AuthService handles the core logic for authentication.
- * In NestJS, @Injectable() marks this as a "service" that can be used (injected) in other places like Controllers.
  */
 @Injectable()
 export class AuthService {
@@ -17,20 +17,18 @@ export class AuthService {
 
   constructor(
     private prisma: PrismaService,
+    private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
   ) {}
 
   /**
-   * Registers a new user.
+   * Registers a new user using the UsersService.
    */
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
     const { email, password, firstName, lastName } = registerDto;
 
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email },
-    });
-
+    const existingUser = await this.usersService.findByEmail(email);
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
@@ -38,13 +36,11 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
 
     try {
-      const user = await this.prisma.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          firstName,
-          lastName,
-        },
+      const user = await this.usersService.create({
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
       });
 
       const tokens = await this.getTokens(user.id, user.email);
@@ -66,15 +62,12 @@ export class AuthService {
   }
 
   /**
-   * Logs in a user.
+   * Logs in a user after validating credentials.
    */
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
     const { email, password } = loginDto;
 
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-    });
-
+    const user = await this.usersService.findByEmail(email);
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -100,7 +93,7 @@ export class AuthService {
   }
 
   /**
-   * Logs out a user.
+   * Logs out a user by clearing their refresh token.
    */
   async logout(userId: string) {
     await this.prisma.user.updateMany({
@@ -113,12 +106,10 @@ export class AuthService {
   }
 
   /**
-   * Refreshes access token.
+   * Refreshes the access token using a valid refresh token.
    */
   async refreshTokens(userId: string, refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
+    const user = await this.usersService.findOne(userId);
 
     if (!user || !user.refreshToken) {
       throw new ForbiddenException('Access Denied');
@@ -144,10 +135,10 @@ export class AuthService {
   }
 
   private async getTokens(userId: string, email: string) {
-    const jwtAccessSecret = this.configService.get<string>('JWT_ACCESS_SECRET');
-    const jwtRefreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
-    const jwtAccessExp = this.configService.get<string>('JWT_ACCESS_EXPIRATION');
-    const jwtRefreshExp = this.configService.get<string>('JWT_REFRESH_EXPIRATION');
+    const jwtAccessSecret = this.configService.getOrThrow<string>('JWT_ACCESS_SECRET');
+    const jwtRefreshSecret = this.configService.getOrThrow<string>('JWT_REFRESH_SECRET');
+    const jwtAccessExp = this.configService.getOrThrow<string>('JWT_ACCESS_EXPIRATION');
+    const jwtRefreshExp = this.configService.getOrThrow<string>('JWT_REFRESH_EXPIRATION');
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
