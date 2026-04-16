@@ -8,13 +8,16 @@ import { Prisma } from '.prisma/client';
 import { PrismaService } from './prisma/prisma.service';
 
 type CreateUserInput = {
-  email?: string;
-  name?: string | null;
+  email: string;
+  password: string;
+  firstName?: string | null;
+  lastName?: string | null;
 };
 
 type UpdateUserInput = {
   email?: string;
-  name?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
 };
 
 @Injectable()
@@ -43,11 +46,17 @@ export class AppService {
       throw new BadRequestException('email is required');
     }
 
+    if (!input.password) {
+      throw new BadRequestException('password is required');
+    }
+
     try {
       return await this.prisma.user.create({
         data: {
           email,
-          name: this.normalizeName(input.name),
+          password: input.password,
+          firstName: this.normalizeName(input.firstName),
+          lastName: this.normalizeName(input.lastName),
         },
       });
     } catch (error) {
@@ -56,8 +65,8 @@ export class AppService {
     }
   }
 
-  async updateUser(id: number, input: UpdateUserInput) {
-    const data: { email?: string; name?: string | null } = {};
+  async updateUser(id: string, input: UpdateUserInput) {
+    const data: Prisma.UserUpdateInput = {};
 
     if (input.email !== undefined) {
       const email = input.email.trim();
@@ -69,8 +78,12 @@ export class AppService {
       data.email = email;
     }
 
-    if (input.name !== undefined) {
-      data.name = this.normalizeName(input.name);
+    if (input.firstName !== undefined) {
+      data.firstName = this.normalizeName(input.firstName);
+    }
+
+    if (input.lastName !== undefined) {
+      data.lastName = this.normalizeName(input.lastName);
     }
 
     if (Object.keys(data).length === 0) {
