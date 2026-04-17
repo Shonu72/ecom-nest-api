@@ -7,6 +7,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategies';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { UsersModule } from '../users/users.module';
 
 @Module({
@@ -29,7 +30,11 @@ import { UsersModule } from '../users/users.module';
     JwtStrategy,
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard,
+      useClass: JwtAuthGuard, // Step 1: Authenticate (populates req.user)
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard, // Step 2: Authorize (checks req.user.role)
     },
   ],
   controllers: [AuthController],

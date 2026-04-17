@@ -30,10 +30,4 @@ export class RegisterDto {
     @IsNotEmpty({ message: 'Role is required' })
     role: string;
 
-
-
-
-
-
-
 }

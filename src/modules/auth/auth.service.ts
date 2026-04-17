@@ -43,7 +43,7 @@ export class AuthService {
         lastName,
       });
 
-      const tokens = await this.getTokens(user.id, user.email);
+      const tokens = await this.getTokens(user.id, user.email, user.role);
       await this.updateRefreshToken(user.id, tokens.refreshToken);
 
       return {
@@ -77,7 +77,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const tokens = await this.getTokens(user.id, user.email);
+    const tokens = await this.getTokens(user.id, user.email, user.role);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
 
     return {
@@ -125,7 +125,7 @@ export class AuthService {
         throw new ForbiddenException('Access Denied: Invalid session');
       }
 
-      const tokens = await this.getTokens(user.id, user.email);
+      const tokens = await this.getTokens(user.id, user.email, user.role);
       await this.updateRefreshToken(user.id, tokens.refreshToken);
 
       return tokens;
@@ -144,7 +144,7 @@ export class AuthService {
     });
   }
 
-  private async getTokens(userId: string, email: string) {
+  private async getTokens(userId: string, email: string, role: string) {
     const jwtAccessSecret = this.configService.getOrThrow<string>('JWT_ACCESS_SECRET');
     const jwtRefreshSecret = this.configService.getOrThrow<string>('JWT_REFRESH_SECRET');
     const jwtAccessExp = this.configService.getOrThrow<string>('JWT_ACCESS_EXPIRATION');
@@ -152,14 +152,14 @@ export class AuthService {
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
-        { sub: userId, email },
+        { sub: userId, email, role },
         {
           secret: jwtAccessSecret,
           expiresIn: jwtAccessExp as any,
         },
       ),
       this.jwtService.signAsync(
-        { sub: userId, email },
+        { sub: userId, email, role },
         {
           secret: jwtRefreshSecret,
           expiresIn: jwtRefreshExp as any,
