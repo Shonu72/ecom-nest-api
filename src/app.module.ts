@@ -8,6 +8,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { CategoriesModule } from './modules/categories/categories.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     PrismaModule,
     AuthModule,
     UsersModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [
