@@ -52,7 +52,7 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Current user account deleted successfully' })
   async deleteMe(@GetCurrentUser('sub') userId: string) {
     await this.usersService.remove(userId);
-    return { message: 'Your account has been deleted successfully' };
+    return {};
   }
 
   /**

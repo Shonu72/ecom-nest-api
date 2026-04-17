@@ -1,9 +1,8 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
+  UnauthorizedException
 } from '@nestjs/common';
 import { Prisma, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -15,27 +14,28 @@ import { ChangePasswordDto } from './dto/change-password.dto';
  */
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly userSelect = {
+    id: true,
+    email: true,
+    firstName: true,
+    lastName: true,
+    role: true,
+    createdAt: true,
+    updatedAt: true,
+  };
+
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * Returns all users from the database.
    */
   async findAll() {
     return this.prisma.user.findMany({
-      orderBy: { id: 'asc' },
-      where :{
-        role : Role.USER
+      orderBy: { id: 'desc' },
+      where: {
+        role: Role.USER
       },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-        // password and refreshToken intentionally excluded
-      },
+      select: this.userSelect,
     });
   }
 
@@ -43,6 +43,23 @@ export class UsersService {
    * Finds a single user by their ID.
    */
   async findOne(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: this.userSelect,
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
+  }
+
+  /**
+   * Finds a single user by their ID including sensitive fields.
+   * Internal use only (e.g., authentication).
+   */
+  async findByIdWithSecrets(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
     });
@@ -70,6 +87,7 @@ export class UsersService {
     try {
       return await this.prisma.user.create({
         data,
+        select: this.userSelect,
       });
     } catch (error) {
       this.handlePrismaError(error);
@@ -85,6 +103,7 @@ export class UsersService {
       return await this.prisma.user.update({
         where: { id },
         data,
+        select: this.userSelect,
       });
     } catch (error) {
       this.handlePrismaError(error);
@@ -93,27 +112,10 @@ export class UsersService {
   }
 
   /**
-   * Returns the current user's profile, omitting sensitive fields.
+   * Returns the current user's profile.
    */
   async getProfile(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    return user;
+    return this.findOne(id);
   }
 
   /**

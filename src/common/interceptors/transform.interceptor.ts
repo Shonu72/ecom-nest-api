@@ -41,11 +41,14 @@ export class TransformInterceptor<T>
         success: true,
         // Priority: data.message from controller > @ResponseMessage decorator > empty string
         message: data?.message || responseMessage,
-        // If data was an object with a message, keep the rest of the data in the "data" field
-        data:
-          data?.message && Object.keys(data).length > 1
-            ? (({ message, ...rest }) => rest)(data)
-            : data,
+        // If data is an object and has a custom message, extract it and remove from data
+        data: (() => {
+          if (data && typeof data === 'object' && 'message' in data) {
+            const { message, ...rest } = data;
+            return Object.keys(rest).length === 0 ? {} : rest;
+          }
+          return data;
+        })(),
       })),
     );
   }

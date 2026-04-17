@@ -114,7 +114,7 @@ export class AuthService {
       throw new BadRequestException('Refresh token is required');
     }
 
-    const user = await this.usersService.findOne(userId);
+    const user = await this.usersService.findByIdWithSecrets(userId);
 
     if (!user || !user.refreshToken) {
       throw new ForbiddenException('Access Denied: No session found');
