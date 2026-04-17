@@ -2,11 +2,13 @@ import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { GetCurrentUser } from '../../common/decorators/get-current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
+import { ResponseMessage } from '../../common/decorators/response-message.decorator';
 import { AuthService } from './auth.service';
 import { AuthResponseDto } from './dto/auth-reponse.dto';
 import { LoginDto } from './dto/login.dto';
-import { RegisterDto } from './dto/register.dto';
 import { RefreshDto } from './dto/refresh.dto';
+import { RegisterDto } from './dto/register.dto';
+
 
 /**
  * AuthController defines the API endpoints for authentication.
@@ -24,6 +26,7 @@ export class AuthController {
   @Public() // This route can be accessed without a token
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage("Registration successful")
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User successfully registered', type: AuthResponseDto })
   async register(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {
@@ -37,6 +40,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ResponseMessage("Login successful")
   @ApiOperation({ summary: 'Login an existing user' })
   @ApiResponse({ status: 200, description: 'User successfully logged in', type: AuthResponseDto })
   async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
@@ -50,6 +54,7 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')
+  @ResponseMessage("Logged out successfully")
   @ApiOperation({ summary: 'Logout the current user' })
   async logout(@GetCurrentUser('sub') userId: string) {
     return await this.authService.logout(userId);
@@ -62,6 +67,7 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @ResponseMessage("Tokens refreshed successfully")
   @ApiOperation({ summary: 'Refresh access token' })
   @ApiResponse({ status: 200, description: 'Tokens successfully refreshed' })
   async refreshTokens(@Body() refreshDto: RefreshDto) {

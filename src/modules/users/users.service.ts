@@ -5,7 +5,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -23,6 +23,9 @@ export class UsersService {
   async findAll() {
     return this.prisma.user.findMany({
       orderBy: { id: 'asc' },
+      where :{
+        role : Role.USER
+      },
       select: {
         id: true,
         email: true,

@@ -1,7 +1,8 @@
 // data transfer object (DTO) for user registration
 
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEmail, IsNotEmpty, IsString, Matches, MinLength } from "class-validator";
+import { Role } from "@prisma/client";
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, Matches, MinLength } from "class-validator";
 
 export class RegisterDto {
 
@@ -26,8 +27,9 @@ export class RegisterDto {
     @IsNotEmpty({ message: 'Last name is required' })
     lastName: string;
 
-    @IsString()
-    @IsNotEmpty({ message: 'Role is required' })
-    role: string;
+    @ApiProperty({ example: 'USER', enum: Role, description: 'The role of the user' })
+    @IsEnum(Role, { message: 'Role must be either USER or ADMIN' })
+    @IsOptional()
+    role?: Role = Role.USER;
 
 }

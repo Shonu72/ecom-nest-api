@@ -26,7 +26,7 @@ export class AuthService {
    * Registers a new user using the UsersService.
    */
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
-    const { email, password, firstName, lastName } = registerDto;
+    const { email, password, firstName, lastName, role } = registerDto;
 
     const existingUser = await this.usersService.findByEmail(email);
     if (existingUser) {
@@ -41,6 +41,7 @@ export class AuthService {
         password: hashedPassword,
         firstName,
         lastName,
+        role,
       });
 
       const tokens = await this.getTokens(user.id, user.email, user.role);
