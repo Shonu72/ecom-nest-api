@@ -12,6 +12,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { CartModule } from './modules/cart/cart.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { OrdersModule } from './modules/orders/orders.module';
     CategoriesModule,
     ProductsModule,
     OrdersModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [
