@@ -45,6 +45,8 @@ model User {
   carts     Cart[]
   payments  Payment[]
   wishlists Wishlist?
+  reviews   Review[]
+  addresses Address[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -67,6 +69,7 @@ model Product {
   orderItems    OrderItem[]
   cartItems     CartItem[]
   wishlistItems WishlistItem[]
+  reviews       Review[]
 
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
@@ -150,6 +153,9 @@ model Order {
 
   shippingAddress String?
 
+  couponId String?
+  coupon   Coupon? @relation(fields: [couponId], references: [id])
+
   orderItems OrderItem[]
   payment    Payment?
 
@@ -226,4 +232,63 @@ model WishlistItem {
   @@index([wishlistId])
   @@index([productId])
   @@map("wishlist_items")
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+model Coupon {
+  id             String       @id @default(uuid())
+  code           String       @unique
+  discountType   DiscountType
+  discountValue  Decimal      @db.Decimal(10, 2)
+  minOrderAmount Decimal?     @db.Decimal(10, 2)
+  maxDiscount    Decimal?     @db.Decimal(10, 2)
+  expiryDate     DateTime
+  usageLimit     Int?
+  usedCount      Int          @default(0)
+  isActive       Boolean      @default(true)
+
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([code])
+  @@map("coupons")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int      @default(5)
+  comment   String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId])
+  @@index([productId])
+  @@map("reviews")
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  street    String
+  city      String
+  state     String
+  zip       String
+  country   String   @default("India")
+  isDefault Boolean  @default(false)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("addresses")
 }
