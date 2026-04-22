@@ -180,7 +180,41 @@ export class PaymentService {
             });
 
             if (!payment || payment.status === PaymentStatus.COMPLETED) {
-                return { message: 'Already processed' };
+                return { message: 'Already processed or not found' };
+            }
+
+            const order = await tx.order.findUnique({
+                where: { id: payment.orderId },
+                include: { coupon: true },
+            });
+
+            if (!order) {
+                throw new NotFoundException('Order not found');
+            }
+
+            // Handle Coupon Finalization
+            if (order.couponId) {
+                // Check if already used for this order (idempotency)
+                const existingUsage = await tx.couponUsage.findUnique({
+                    where: { orderId: order.id },
+                });
+
+                if (!existingUsage) {
+                    // Create usage record
+                    await tx.couponUsage.create({
+                        data: {
+                            couponId: order.couponId,
+                            userId: order.userId,
+                            orderId: order.id,
+                        },
+                    });
+
+                    // Increment global used count
+                    await tx.coupon.update({
+                        where: { id: order.couponId },
+                        data: { usedCount: { increment: 1 } },
+                    });
+                }
             }
 
             await tx.payment.update({

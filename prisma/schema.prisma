@@ -43,10 +43,11 @@ model User {
   //Relations
   orders    Order[]
   carts     Cart[]
-  payments  Payment[]
-  wishlists Wishlist?
-  reviews   Review[]
-  addresses Address[]
+  payments     Payment[]
+  wishlists    Wishlist?
+  reviews      Review[]
+  addresses    Address[]
+  couponUsages CouponUsage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -156,6 +157,8 @@ model Order {
   couponId String?
   coupon   Coupon? @relation(fields: [couponId], references: [id])
 
+  couponUsage CouponUsage?
+
   orderItems OrderItem[]
   payment    Payment?
 
@@ -252,12 +255,29 @@ model Coupon {
   isActive       Boolean      @default(true)
 
   orders Order[]
+  usages CouponUsage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([code])
   @@map("coupons")
+}
+
+model CouponUsage {
+  id        String   @id @default(uuid())
+  couponId  String
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, couponId, orderId])
+  @@index([couponId])
+  @@index([userId])
+  @@map("coupon_usages")
 }
 
 model Review {

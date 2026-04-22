@@ -37,6 +37,9 @@ export class OrderResponseDto {
     @ApiProperty({ example: '123 Main St, New York, NY 10001', nullable: true })
     shippingAddress: string | null;
 
+    @ApiProperty({ example: 'SAVE20', required: false })
+    couponCode?: string;
+
     @ApiProperty({ type: [OrderItemResponseDto] })
     items: OrderItemResponseDto[];
 

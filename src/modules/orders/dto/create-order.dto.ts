@@ -4,6 +4,7 @@ import {
     IsArray,
     IsInt,
     IsNotEmpty,
+    IsOptional,
     IsString,
     IsUUID,
     Min,
@@ -33,4 +34,9 @@ export class CreateOrderDto {
     @IsString()
     @IsNotEmpty()
     shippingAddress: string;
+
+    @ApiProperty({ example: 'SAVE20', required: false })
+    @IsString()
+    @IsOptional()
+    couponCode?: string;
 }

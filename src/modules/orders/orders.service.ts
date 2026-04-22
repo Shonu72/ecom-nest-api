@@ -61,6 +61,61 @@ export class OrdersService {
                 });
             }
 
+            // Handle Coupon
+            let couponId: string | undefined;
+            let discountAmount = 0;
+
+            if (createOrderDto.couponCode) {
+                const coupon = await tx.coupon.findUnique({
+                    where: { code: createOrderDto.couponCode.toUpperCase() },
+                    include: { usages: { where: { userId } } },
+                });
+
+                if (!coupon) {
+                    throw new NotFoundException('Invalid coupon code');
+                }
+
+                if (!coupon.isActive) {
+                    throw new BadRequestException('Coupon is inactive');
+                }
+
+                if (new Date() > coupon.expiryDate) {
+                    throw new BadRequestException('Coupon has expired');
+                }
+
+                if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
+                    throw new BadRequestException('Coupon usage limit reached');
+                }
+
+                // Check per-user limit (assuming 1 per user for now if we track usages, 
+                // or we could add a perUserLimit field to Coupon model. 
+                // For now let's just check if they used it already if it's meant to be unique)
+                if (coupon.usages.length > 0) {
+                    throw new BadRequestException('You have already used this coupon');
+                }
+
+                if (coupon.minOrderAmount && totalAmount < Number(coupon.minOrderAmount)) {
+                    throw new BadRequestException(`Minimum order amount of ${coupon.minOrderAmount} required`);
+                }
+
+                // Calculate discount
+                if (coupon.discountType === 'PERCENTAGE') {
+                    discountAmount = (totalAmount * Number(coupon.discountValue)) / 100;
+                    if (coupon.maxDiscount && discountAmount > Number(coupon.maxDiscount)) {
+                        discountAmount = Number(coupon.maxDiscount);
+                    }
+                } else {
+                    discountAmount = Number(coupon.discountValue);
+                }
+
+                if (discountAmount > totalAmount) {
+                    discountAmount = totalAmount;
+                }
+
+                couponId = coupon.id;
+                totalAmount -= discountAmount;
+            }
+
             // Create Order
             const order = await tx.order.create({
                 data: {
@@ -68,6 +123,7 @@ export class OrdersService {
                     shippingAddress,
                     status: OrderStatus.PENDING,
                     totalAmount,
+                    couponId,
                     orderItems: {
                         create: orderItemsData,
                     },
@@ -78,6 +134,7 @@ export class OrdersService {
                             product: true,
                         },
                     },
+                    coupon: true,
                 },
             });
 
@@ -254,6 +311,7 @@ export class OrdersService {
             shippingAddress: order.shippingAddress,
             createdAt: order.createdAt,
             updatedAt: order.updatedAt,
+            couponCode: order.coupon?.code,
             items: order.orderItems.map((item) => ({
                 id: item.id,
                 productId: item.productId,
