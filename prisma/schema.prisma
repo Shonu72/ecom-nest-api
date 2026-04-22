@@ -41,9 +41,10 @@ model User {
   refreshToken String?
 
   //Relations
-  orders   Order[]
-  carts    Cart[]
-  payments Payment[]
+  orders    Order[]
+  carts     Cart[]
+  payments  Payment[]
+  wishlists Wishlist?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -63,8 +64,9 @@ model Product {
   isActive    Boolean @default(true)
 
   // Relations
-  orderItems OrderItem[]
-  cartItems  CartItem[]
+  orderItems    OrderItem[]
+  cartItems     CartItem[]
+  wishlistItems WishlistItem[]
 
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
@@ -198,4 +200,30 @@ model Payment {
   @@index([userId])
   @@index([transactionId])
   @@map("payments")
+}
+
+model Wishlist {
+  id        String         @id @default(uuid())
+  userId    String         @unique
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     WishlistItem[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([userId])
+  @@map("wishlists")
+}
+
+model WishlistItem {
+  id         String   @id @default(uuid())
+  wishlistId String
+  wishlist   Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([wishlistId, productId])
+  @@index([wishlistId])
+  @@index([productId])
+  @@map("wishlist_items")
 }
