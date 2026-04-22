@@ -183,7 +183,7 @@ model Payment {
   status        PaymentStatus @default(PENDING)
   currency      String        @default("usd")
   paymentMethod String?
-  transactionId String?
+  transactionId String? @unique
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
