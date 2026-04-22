@@ -10,6 +10,7 @@ import {
     Post,
     UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
     ApiBearerAuth,
     ApiOperation,
@@ -51,6 +52,7 @@ export class CouponsController {
 
     @Post('validate')
     @UseGuards(JwtAuthGuard)
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiBearerAuth('JWT-auth')
     @ApiOperation({ summary: 'Validate a coupon code' })
     @ApiResponse({ status: HttpStatus.OK, description: 'Return validation result' })

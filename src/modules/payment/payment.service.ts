@@ -23,13 +23,27 @@ export class PaymentService {
         private prisma: PrismaService,
         private configService: ConfigService,
     ) {
-        this.razorpay = new Razorpay({
-            key_id: this.configService.get<string>('RAZORPAY_KEY_ID'),
-            key_secret: this.configService.get<string>('RAZORPAY_KEY_SECRET'),
-        });
+        const keyId = this.configService.get<string>('RAZORPAY_KEY_ID');
+        const keySecret = this.configService.get<string>('RAZORPAY_KEY_SECRET');
+
+        if (keyId && keySecret) {
+            this.razorpay = new Razorpay({
+                key_id: keyId,
+                key_secret: keySecret,
+            });
+        }
+    }
+
+    private verifyRazorpayConfig() {
+        if (!this.razorpay) {
+            throw new InternalServerErrorException(
+                'Razorpay is not configured. Please provide RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env',
+            );
+        }
     }
 
     async initiatePayment(userId: string, createPaymentDto: CreatePaymentDto) {
+        this.verifyRazorpayConfig();
         const { orderId } = createPaymentDto;
 
         const order = await this.prisma.order.findUnique({
@@ -89,6 +103,7 @@ export class PaymentService {
     }
 
     async verifyPayment(userId: string, verifyPaymentDto: VerifyPaymentDto) {
+        this.verifyRazorpayConfig();
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
             verifyPaymentDto;
 

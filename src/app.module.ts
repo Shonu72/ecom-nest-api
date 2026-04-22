@@ -18,6 +18,8 @@ import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
 import { AddressesModule } from './modules/addresses/addresses.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 
 @Module({
   imports: [
@@ -40,6 +42,7 @@ import { AddressesModule } from './modules/addresses/addresses.module';
     ReviewsModule,
     CouponsModule,
     AddressesModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [
@@ -47,6 +50,10 @@ import { AddressesModule } from './modules/addresses/addresses.module';
     {
       provide: APP_INTERCEPTOR,
       useClass: TransformInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,
     },
     {
       provide: APP_FILTER,

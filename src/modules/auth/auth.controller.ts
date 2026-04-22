@@ -1,4 +1,5 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { GetCurrentUser } from '../../common/decorators/get-current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
@@ -24,6 +25,7 @@ export class AuthController {
    * POST /auth/register
    */
   @Public() // This route can be accessed without a token
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @ResponseMessage("Registration successful")
@@ -38,6 +40,7 @@ export class AuthController {
    * POST /auth/login
    */
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ResponseMessage("Login successful")
